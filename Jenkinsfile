@@ -5,6 +5,20 @@ pipeline {
         skipDefaultCheckout(true)
     }
 
+    parameters {
+        string(
+            name: 'Branch_or_Tag',
+            defaultValue: 'main',
+            description: 'Git branch or tag to deploy'
+        )
+
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['qa', 'ppe', 'prod'],
+            description: 'Select deployment environment'
+        )
+    }
+
     environment {
         REPO_URL    = 'https://github.com/Raihan-009/jenkins-ci.git'
         DEPLOY_ROOT = '/var/jenkins-deploy'
@@ -23,7 +37,6 @@ pipeline {
                         ]],
 
                         userRemoteConfigs: [[
-                            credentialsId: 'github-pat',
                             url: env.REPO_URL
                         ]]
                     ])
@@ -49,6 +62,8 @@ pipeline {
 
                     echo "Environment: ${ENVIRONMENT}" \
                       >> build/build-info.txt
+
+                    cat build/build-info.txt
                 '''
             }
         }
@@ -60,6 +75,8 @@ pipeline {
 
                     test -f index.html
                     grep -q "Hello World" index.html
+
+                    echo "Tests passed."
                 '''
             }
         }
@@ -82,6 +99,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
+
                     def safeBranch = params.Branch_or_Tag
                         .replaceAll('refs/heads/', '')
                         .replaceAll('refs/tags/', '')
@@ -178,8 +196,7 @@ pipeline {
                       "http://${HOST_IP}:${PORT}/" \
                       | grep -q "Hello World"
 
-                    echo \
-                      "Live at http://${HOST_IP}:${PORT}/"
+                    echo "Live at http://${HOST_IP}:${PORT}/"
                 '''
             }
         }
@@ -204,6 +221,7 @@ pipeline {
     }
 
     post {
+
         success {
             echo """
             Deployment successful.
